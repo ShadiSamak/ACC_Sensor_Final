@@ -4,6 +4,7 @@ import '../styles/sleep.css';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { IconButton } from '@mui/material';
 import axios, * as others from 'axios';
+import { AxiosError } from "axios";
 import { Tooltip } from '@chakra-ui/react'
 export default function Run() {
     // File
@@ -63,6 +64,11 @@ export default function Run() {
     const [overwrite, setoverwrite] = useState(false);
     const [hasib_value, setHasibValue] = useState();
 
+    // Run
+    const [error, setError] = useState("");
+    const [response, setResponse] = useState("");
+    const [loading, setLoading] = useState(false);
+
     useEffect(() => {
         load_memory();
     }, []);
@@ -78,7 +84,7 @@ export default function Run() {
 
             if (JSON.parse(localStorage.getItem('time_zone')) !== "")
                 setTimeZoneValue(JSON.parse(localStorage.getItem('time_zone'))['value']);
-            
+
             //setInputFileValue(JSON.parse(localStorage.getItem('input_file_name')));
             setOutputFileValue(JSON.parse(localStorage.getItem('output_file_name')));
 
@@ -136,7 +142,7 @@ export default function Run() {
             setBoutTolInaActtValue(JSON.parse(localStorage.getItem('bout_tollorance_inactive')));
             setBoutTolLimActValue(JSON.parse(localStorage.getItem('bout_tollorance_lowactive')));
             setBoutTolMVPAValue(JSON.parse(localStorage.getItem('bout_tollorance_mvpa')));
-            
+
             setDurInaAct1Value(JSON.parse(localStorage.getItem('duration_inactive1'))['value']);
             setDurInaAct2Value(JSON.parse(localStorage.getItem('duration_inactive2'))['value']);
             setDurInaAct3Value(JSON.parse(localStorage.getItem('duration_inactive3'))['value']);
@@ -189,6 +195,9 @@ export default function Run() {
     }
 
     async function sendConfig() {
+        setResponse("Loading...");
+        setError("");
+
         load_memory()
         console.log(inputname_value)
         let configurations = {
@@ -257,12 +266,19 @@ export default function Run() {
         })
             .then((response) => {
                 console.log("Response:", response.data);
+                setResponse(response.data)
             })
             .catch((error) => {
                 console.error("Error:", error);
+                if (error instanceof AxiosError) {
+                    const warnings = error.response?.data?.warnings || [];
+                    const errorMessage = error.response?.data?.error || "An error occurred";
+                    setResponse(JSON.stringify({ warnings, error: errorMessage }, null, 2));
+                  } else {
+                    setResponse(JSON.stringify({ error: "An unexpected error occurred" }, null, 2));
+                  }
+                
             });
-
-            
     }
 
     return (
@@ -377,8 +393,8 @@ export default function Run() {
                     </td>
                     <td className="cells-report">
 
-                        <table style={{ marginLeft: 'auto', marginRight: 'auto' }}>
-                            <tr >
+                        <table style={{ marginLeft: 'auto', marginRight: 'auto' ,  width:'50%'}} >
+                            <tr>
                                 <td style={{
                                     display: "flex",
                                     justifyContent: "right"
@@ -431,12 +447,24 @@ export default function Run() {
                                 </td>
                             </tr>
                             <tr>
-                                <td colSpan="2">
+                            <td className="w-full text-center">
+                                <div className="flex justify-center items-center h-32">
                                     <br /><br />
-                                    <button onClick={sendConfig} className='confirm-button' >
+                                    <button onClick={sendConfig} className='confirm-button'>
                                         START
                                     </button>
+                                    </div>
                                 </td>
+                            </tr>
+                            <tr>
+                            <div className="flex flex-col items-center p-4" >
+                                <textarea
+                                    style={{width:'40vh'}}
+                                    className="mt-4 w-full h-96 p-2 border rounded-md bg-transparent text-[6pt]"
+                                    readOnly
+                                    value={response}
+                                />
+                                    </div>
                             </tr>
                         </table>
                     </td>
